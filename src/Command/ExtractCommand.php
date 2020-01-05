@@ -20,6 +20,7 @@ class ExtractCommand extends BaseCommand
 
     protected $_useResource = null;
     protected $_resource = false;
+    protected $_flatCats = [];
 
     protected function configure()
     {
@@ -33,6 +34,53 @@ class ExtractCommand extends BaseCommand
                 'Specify the data partition key (folder name), or keys separated by a space, that you want to extract. '
             )
         ;
+    }
+
+    /**
+     * recursive call to build category tree
+     * @param int $parent
+     * @return mixed
+     */
+    private function getAllCategories($parent = 0) {
+        $allCategories = [];
+
+        $categories = $this->modx->getCollection('modCategory',['parent' => $parent]);
+
+        /** @var \modCategory $category */
+        foreach ($categories as $category) {
+            $allCategories[$category->get('id')]['name'] = $category->get('category');
+            $allCategories[$category->get('id')]['parent'] = $category->get('parent');
+            $allCategories[$category->get('id')]['children'] = $this->getAllCategories($category->get('id'));
+        }
+
+        if (count($allCategories)) {
+            return $allCategories;
+        }
+
+        return false;
+    }
+
+    /**
+     * recursive call to flatten the tree structure - for access via category id
+     * uses class attribute $_flatCats
+     *
+     * @param $categories
+     * @param string $parentPath
+     */
+    private function flattenAllCategories($categories, $parentPath = '') {
+        foreach ($categories as $catId => $category) {
+            $this->_flatCats[$catId]['name'] = $category['name'];
+            $this->_flatCats[$catId]['parent'] = $category['parent'];
+            if ($category['parent'] == 0) {
+                $this->_flatCats[$catId]['path'] = $category['name'];
+            } else {
+                $this->_flatCats[$catId]['path'] = $this->_flatCats[$category['parent']]['path'].DIRECTORY_SEPARATOR.$category['name'];
+            }
+
+            if (is_array($category['children'])) {
+                $this->flattenAllCategories($category['children'], $this->_flatCats[$catId]['path']);
+            }
+        }
     }
 
     /**
@@ -51,6 +99,11 @@ class ExtractCommand extends BaseCommand
         if (!$partitions || empty($partitions)) {
             $partitions = array_keys($this->config['data']);
         }
+
+        // get category tree
+        $categories = $this->getAllCategories();
+        $this->flattenAllCategories($categories);
+
         foreach ($this->config['data'] as $folder => $options) {
             if (!in_array($folder, $partitions, true)) {
                 if ($output->isVerbose()) {
@@ -230,6 +283,13 @@ class ExtractCommand extends BaseCommand
             $path = str_replace('/', '-', $path);
 
             $ext = (isset($options['extension'])) ? $options['extension'] : '.yaml';
+
+            if ($options['tree'] == 1 AND $this->_flatCats[$object->get('category')]['path'] != '') {
+                // replace special chars for folder name
+                $additionalFolder = preg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '_', $this->_flatCats[$object->get('category')]['path']);
+                $path = $additionalFolder . DIRECTORY_SEPARATOR . $path;
+            }
+
             $fn = $folder . DIRECTORY_SEPARATOR . $path . $ext;
 
             $fn = $this->normalizePath($fn);
@@ -323,32 +383,6 @@ class ExtractCommand extends BaseCommand
 
         $this->modx->addPackage($package, $path);
     }
-
-    /**
-     * Loops over a folder to get all the files in it. Uses for cleaning up old files.
-     *
-     * @param $folder
-     * @return array
-     */
-    public function getAllFiles($folder)
-    {
-        $files = array();
-        try {
-            $di = new \RecursiveDirectoryIterator($folder, \RecursiveDirectoryIterator::SKIP_DOTS);
-            $it = new \RecursiveIteratorIterator($di);
-        } catch (\Exception $e) {
-            return array();
-        }
-
-        foreach($it as $file)
-        {
-            /** @var \SplFileInfo $file */
-            $file_path = $file->getPath() . DIRECTORY_SEPARATOR . $file->getFilename();
-            $files[] = $this->normalizePath($file_path);
-        }
-        return $files;
-    }
-
 
     /**
      * Turns a category ID into a name

@@ -383,23 +383,16 @@ class BuildCommand extends BaseCommand
             }
         }
 
-        $directory = new \DirectoryIterator(GITIFY_WORKING_DIR . $folder);
+        $files = $this->getAllFiles(GITIFY_WORKING_DIR . $folder);
 
         // Reset the conflicts so we're good to go on new ones
         $this->resetConflicts();
         $this->getExistingObjects($type['class'], $criteria);
 
-        foreach ($directory as $file) {
+        foreach ($files as $filePathAndName) {
             /** @var \SplFileInfo $file */
+            $file = new \SplFileInfo($filePathAndName);
             $name = $file->getBasename();
-
-            // Ignore dotfiles/folders
-            if (substr($name, 0, 1) == '.') continue;
-
-            if (!$file->isFile()) {
-                $this->output->writeln('- Skipping ' . $file->getType() . ': ' . $name);
-                continue;
-            }
 
             // Load the file contents
             $file = file_get_contents($file->getRealPath());

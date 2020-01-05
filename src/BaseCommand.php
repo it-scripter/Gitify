@@ -104,4 +104,29 @@ abstract class BaseCommand extends Command
 
         return null;
     }
+
+    /**
+     * Loops over a folder to get all the files in it. Uses for cleaning up old files.
+     *
+     * @param $folder
+     * @return array
+     */
+    public function getAllFiles($folder)
+    {
+        $files = array();
+        try {
+            $di = new \RecursiveDirectoryIterator($folder, \RecursiveDirectoryIterator::SKIP_DOTS);
+            $it = new \RecursiveIteratorIterator($di);
+        } catch (\Exception $e) {
+            return array();
+        }
+
+        foreach($it as $file)
+        {
+            /** @var \SplFileInfo $file */
+            $file_path = $file->getPath() . DIRECTORY_SEPARATOR . $file->getFilename();
+            $files[] = $this->normalizePath($file_path);
+        }
+        return $files;
+    }
 }
