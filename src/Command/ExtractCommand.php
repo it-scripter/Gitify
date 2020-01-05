@@ -299,10 +299,27 @@ class ExtractCommand extends BaseCommand
             }
         }
 
-        $out = Gitify::toYAML($data);
+        $commentStart = '';
+        $commentEnd = '';
+        if ($options['editable']) {
+            switch ($options['class']) {
+                case 'modChunk':
+                case 'modTemplate':
+                    $commentStart = Gitify::$commentStartHtml;
+                    $commentEnd = Gitify::$commentEndHtml;
+                    break;
+                case 'modSnippet':
+                    $commentStart = Gitify::$commentStartPhp;
+                    $commentEnd = Gitify::$commentEndPhp;
+                    break;
+            }
+        }
+
+        $out = $commentStart;
+        $out .= Gitify::toYAML($data);
 
         if (!empty($content)) {
-            $out .= Gitify::$contentSeparator . $content;
+            $out .= Gitify::$contentSeparator . $commentEnd . $content;
         }
         return $out;
     }

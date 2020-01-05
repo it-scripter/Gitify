@@ -408,6 +408,25 @@ class BuildCommand extends BaseCommand
             $file = str_replace("\r\n", "\n", $file);
             $file = str_replace("\r", "\n", $file);
 
+            if ($type['editable']) {
+                switch ($type['class']) {
+                    case 'modChunk':
+                    case 'modTemplate':
+                        $commentStart = Gitify::$commentStartHtml;
+                        $commentEnd = Gitify::$commentEndHtml;
+                        break;
+                    case 'modSnippet':
+                        $commentStart = Gitify::$commentStartPhp;
+                        $commentEnd = Gitify::$commentEndPhp;
+                        break;
+                    default:
+                        $commentStart = '';
+                        $commentEnd = '';
+                }
+                $file = str_replace($commentStart,'', $file);
+                $file = str_replace($commentEnd,'', $file);
+            }
+
             // Check if delimiter exists, otherwise add it to avoid WARN in explode()
             // (WARN @ Gitify/src/Command/BuildCommand.php : 407) PHP notice: Undefined offset: 1
             if (strpos($file, Gitify::$contentSeparator) === false) {

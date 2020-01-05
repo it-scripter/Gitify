@@ -20,6 +20,30 @@ class Gitify extends Application
      */
     public static $contentSeparator = "\n-----\n\n";
     /**
+     * Used to comment gitify data in html files out. Start tag.
+     *
+     * @var string
+     */
+    public static $commentStartHtml = "<!-- Gitify Data Start\n";
+    /**
+     * Used to comment gitify data in html files out. End tag
+     *
+     * @var string
+     */
+    public static $commentEndHtml = "Gitify Data End -->\n\n";
+    /**
+     * Used to comment gitify data in php files out. Start tag.
+     *
+     * @var string
+     */
+    public static $commentStartPhp = "<?php \n/* Gitify Data Start\n";
+    /**
+     * Used to comment gitify data in php files out. End tag
+     *
+     * @var string
+     */
+    public static $commentEndPhp = "\nGitify Data End */\n\n";
+    /**
      * Universal directory separator for *Nix and Windows
      *
      * @var string
